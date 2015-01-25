@@ -1,0 +1,53 @@
+---
+title: "Automatic Recognition of Weight Lifting Exercises"
+author: "Jonathan J. Hull"
+date: "Monday, January 19, 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(caret);
+training_orig    <- read.csv("pml-training.csv");
+training_trimmed <- training_orig[-c(1,5,6,12:36,50:59,69:83,87:101,103:112,125:139,141:150)];
+
+set.seed(1976);
+inValid           <- createDataPartition(y=training_trimmed$classe, p=0.95, list=FALSE);
+validity_test_set <- training_trimmed[-inValid,];
+training_set      <- training_trimmed[inValid,];
+
+# find out how many variable pairs are highly correlated (more than 80%)
+M       <- abs(cor(training_set[,-c(1,57)]));
+diag(M) <- 0;
+nrow(which(M > 0.8, arr.ind=T))/2;
+
+# rf_56vars <- train(classe~.,data=training_set, method="rf", trControl=trainControl(method="cv",number=10))
+
+set.seed(1976);
+train_folds <- createFolds(y=training_set$classe, k=10, list=TRUE, returnTrain=TRUE);
+set.seed(1976);
+test_folds  <- createFolds(y=training_set$classe, k=10, list=TRUE, returnTrain=TRUE);
+
+create_pcas <- function(folds) { 
+   for (i in 1:10) { 
+     pca <- sprintf("pca_%d",i);
+     assign(pca, training_set[ train_folds[[i]], ]);
+     print(pca);
+     save((parse(text=pca)), file="proj1_pcas.RData");
+   }
+}
+
+save.image("proj1.RData");
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

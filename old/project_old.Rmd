@@ -1,0 +1,100 @@
+---
+title: "Automatic Recognition of Weight Lifting Exercises"
+author: "Jonathan J. Hull"
+date: "Monday, January 19, 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+# setwd("C:/Users/hull/Documents/data science/Practical ML/project/");
+library(caret);
+
+###########################################################################
+#
+#  pml_write_files -- supplied with project.  Write out answers on test set
+#
+
+pml_write_files = function(x) {
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+###############################################################################
+#
+#  accuracy(values,prediction) -- compare values to prediction and print
+#     the percentage that are different from each other.  This is used to
+#     calculate the out of sample error rate.
+#
+
+accuracy <- function(values,prediction) {
+  num_errors <- sum(prediction != values);
+  printf("out of sample error rate estimate=%5.2f%%\n", 100.0*num_errors/length(values));
+  printf("   estimated on %d samples\n",length(values));
+}
+
+training_orig    <- read.csv("pml-training.csv");
+training_trimmed <- training_orig[-c(1,5,6,12:36,50:59,69:83,87:101,103:112,125:139,141:150)];
+
+set.seed(1976);
+inValid           <- createDataPartition(y=training_trimmed$classe, p=0.95, list=FALSE);
+validity_test_set <- training_trimmed[-inValid,];
+training_set      <- training_trimmed[inValid,];
+
+###########################################################################
+#
+#  Train the random forest on the 56 variables left over after trimming
+#
+
+# rf_56vars <- train(classe~.,data=training_set, method="rf", trControl=trainControl(method="cv",number=10))
+# save(rf_56vars, file="rf_56vars.RData");
+
+load("rf_56vars.Rdata");
+
+# Print the random forest
+
+rf_56vars
+
+# Print the final model
+rf_56vars$finalModel
+
+###############################################################################
+#
+#  Estimate out of sample error rate with the OOB value in finalModel and 
+#  confirm that with the validity_test_set.  It was held out of all
+#  cross validation and thus represents what we should see on an unseen test set
+#  
+res_validity <- predict(rf_56vars, newdata=validity_test_set);
+
+accuracy(res_validity, validity_test_set$classe);
+
+##############################################################################
+#
+#  Run the model on the test set and print the results
+#
+
+test_orig    <- read.csv("pml-testing.csv");
+test_trimmed <- test_orig[-c(1,5,6,12:36,50:59,69:83,87:101,103:112,125:139,141:150)];
+res_test     <- predict(rf_56vars,newdata=test_trimmed);
+
+setwd("results");
+results_to_report <- as.character(res_test);
+pml_write_files(results_to_report);
+
+save.image("proj1.RData");
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
